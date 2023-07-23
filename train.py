@@ -9,6 +9,11 @@ from tensorflow.keras.metrics import Recall,Precision
 from tensorflow.keras.callbacks import EarlyStopping,ModelCheckpoint,ReduceLROnPlateau,CSVLogger,TensorBoard
 from data import load_data,tf_dataset
 from model import build_model
+import wandb
+from wandb.keras import WandbCallback
+wandb.init(project='polypSegmentationDVP', entity="anishhota")
+wandb.init(config={"hyper": "parameter"})
+
 
 
 def iou(y_true, y_pred):
@@ -25,14 +30,14 @@ if __name__ == "__main__":
     np.random.seed(42)
     tf.random.set_seed(42)
 
-    path = "CVC-ClinicDB"
+    path = "Kvasir-SEG"
     ((train_x,train_y),(valid_x,valid_y),(test_x,test_y)) = load_data(path)
     print(len(train_x),len(valid_x),len(test_x))
 
     ## Hyperparameter
     batch = 8
     lr = 1e-4
-    epochs = 100
+    epochs = 200
 
     train_dataset = tf_dataset(train_x,train_y, batch=batch)
     valid_dataset = tf_dataset(valid_x,valid_y, batch=batch)
@@ -48,7 +53,8 @@ if __name__ == "__main__":
         ReduceLROnPlateau(monitor='val_loss',factor=0.1,patience=3),
         CSVLogger("files\data.csv"),
         TensorBoard(),
-        EarlyStopping(monitor="val_loss",patience=10, restore_best_weights=False)
+        EarlyStopping(monitor="val_loss",patience=10, restore_best_weights=False),
+        WandbCallback()
     ]
 
     train_steps = len(train_x)//batch
@@ -68,3 +74,5 @@ if __name__ == "__main__":
         callbacks = callbacks,
         shuffle=False
     )
+
+    wandb.finish()
